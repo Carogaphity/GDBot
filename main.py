@@ -10,7 +10,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 
-game_states = {}
+game_states = []
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -22,8 +22,7 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 
 client = discord.Client(intents=intents)
 
-global cmd
-cmd = 'GD '
+cmd = 'GD-'
 
 
 def create_level():
@@ -31,11 +30,11 @@ def create_level():
 	level = """
 	🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
 	🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-	🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-	🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-	🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-	🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-	🟦🟦🟧🟦🟦🔺🔺🟦🟦🟦⬛⬛⬛⬛🟦🟦🟦⬛⬛⬛⬛🟦🟦🟦🟦🟦🟦🏁
+	🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟪🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
+	🟦🟦🟦🟦🟦🟦🟦🟦🟪🟪🟦🟦🟦🟦🟦🟦🟦🟦🟦🟪🟪🟦🟦🟦🟦🟦🟦🏁
+	🟦🟦🟦🟪🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟪🟦🟦🟦🟦🟦🟦🟪🟪🟦🟦🟦🏁
+	🟦🟦🟪🟦🟦🟪🟪🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟪🟪🟦🏁
+	🟦🟦🟧🟦🟦🟦🟦🟦🟦🟦🟦🟪🟦🟦🟦🟦🟦🟦🟪🟦🟦🟦🟦🟦🟦🟦🟦🏁
 	⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛🏁
 	⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛🏁
 	"""
@@ -69,13 +68,18 @@ async def on_reaction_add(reaction, user):
         return
 
     # Check if the reaction is related to an ongoing game
-    if reaction.message.id in game_states:
-        game_state = game_states[reaction.message.id]
+    if user.id in game_states:
+
+        game_index = next(index for index, sublist in enumerate(game_states) if user.id in sublist)
+
 
         # Check if the reaction is the jump reaction
-        if str(reaction.emoji) == 'U+D83C':
+        if str(reaction.emoji) == '\U0001F53C':
+            
             # Set the jump variable in the game state
-            game_state['p'] = 1
+            game_index[1] = True
+            print("user:", user.id)
+            print("clicked")
 
             # Remove the reaction so the user can react again
             await reaction.remove(user)
@@ -83,29 +87,41 @@ async def on_reaction_add(reaction, user):
 
 @client.event
 async def on_message(message):
+    global cmd
+    
+    
     if message.author == client.user:
         return
     if message.content.startswith(cmd + 'play'):
-        
-        if message.author.id not in game_states:
+        # if any('placeholder3' in a for a in list):
+        if any(message.author.id not in a for a in game_states):
+            print("new game state")
             # If not, create a new game state
-            game_states[message.author.id] = {
-                'p': 0
-            }
+            game_states.append([message.author.id, False])
         
 
         board, player_pos = create_level()
-        embed = discord.Embed(title='Geometry Dash', description=board, color=discord.Color.green())
+        new_frame = ""
+
+        start_col = player_pos[0] - 2
+        end_col = player_pos[0] + 4
+
+        for row in board: new_frame += ("".join(row[start_col:end_col]) + '\n')
+
+        embed = discord.Embed(title='Geometry Dash', description=new_frame, color=discord.Color.green())
         embed.add_field(name=f'Started by {message.author}', value='', inline=True)
 
         bot_message = await message.channel.send(embed=embed)
-        await bot_message.add_reaction('U+D83C')
+        await bot_message.add_reaction('\U0001F53C')
 
         play = True
 
-        gs = game_states[message.author.id]
+        
+        game_index = next(index for index, sublist in enumerate(game_states) if message.author.id in sublist)
+        
         
         jumped = 0
+        
 
         while play:
 
@@ -113,11 +129,16 @@ async def on_message(message):
             if board[player_pos[1] + 1][player_pos[0]] == '⬛':
                 jumped = 0
 
+            clicked = (game_index)[1]
 
+            print("message:", message.author.id)
             #If the player wants to jump and there's ground below them, jump.
-            if gs['p'] and board[player_pos[1] + 1][player_pos[0]] == '⬛':
+            if clicked and board[player_pos[1] + 1][player_pos[0]] == '⬛':
+                print("jumped")
                 player_pos[1] -= 1
                 jumped = 1
+
+            
 
             #If player is not on ground and is not jumping, moves player down
             if board[player_pos[1] + 1][player_pos[0]] != '⬛' and jumped == 0:
@@ -127,14 +148,12 @@ async def on_message(message):
             if board[player_pos[1]][player_pos[0]] == '🏁':
                 await message.channel.send('You win!')
                 play = False
-                game_states.remove(message.author.id)
                 break
 
             #Checks if the player crashes
             elif board[player_pos[1]][player_pos[0]] in ['🔺', '⬛']:
                 await message.channel.send('You lose!')
                 play = False
-                game_states.remove(message.author.id)
                 break
 
             #Changes player's printed position
@@ -171,10 +190,10 @@ async def on_message(message):
             
     
     elif message.content.startswith(cmd + 'changePrefix'):
-        cmd = str(message.content).replace(cmd + 'changePrefix', "")
-        message.channel.send(f'Prefix changed to {cmd}!')
+        cmd = str(message.content).replace(cmd + 'changePrefix ', "")
+        await message.channel.send(f'Prefix changed to `{cmd}`!')
+
+    elif message.content.startswith(cmd + 'help'):
+         await message.channel.send('# Commands\n - `changePrefix`: Changes the prefix command.\n - `Play:` Starts a game.')
 
 client.run(TOKEN)
-
-
-
