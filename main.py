@@ -9,7 +9,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 
-game_states = []
+game_states = {}
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -30,47 +30,46 @@ emoji_dict = {
     "⬛": "<:ground:1226622599111376948>",
     "-": "<:ground:1226622599111376948> ",
     "🟧": "<:player:1226622170554171403>",
-    "🏁": ":pause_button:",
-    " ": "???"
+    "🏁": ":pause_button:"
 }
 
 
 cmd = "GD-"
 
 
-def create_level():
+def create_level(user):
 
     global emoji_dict
+    if game_states[user][1]:
+        level = game_states[user][1] 
 
-    level = """
-  🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-  🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-  🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-  🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-  🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-  🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-  🟦🟦🟧🟦🟦🟦🔺🔺🟦🟦🟦🟦🟦⬛⬛⬛⬛🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🏁
-  ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛🏁
-  ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛🏁
-  """
-
+    else:
+        return None, None
+    try:
     # Splits the level into rows
-    rows = level.strip().split("\n")
+        rows = level.strip().split("\n")
 
-    # Creates a list of lists, where each sublist is a row of emojis (string of chr)
-    chr_list = []
-    for string in rows:
-        spritelist = [emoji_dict[char] for char in string if char in emoji_dict]
-        chr_list.append(list(spritelist))
+        # Creates a list of lists, where each sublist is a row of emojis (string of chr)
+        chr_list = []
+        for string in rows:
+            string.strip()
+            spritelist = [emoji_dict[char] for char in string]
+            chr_list.append(list(spritelist))
+
+    except:
+        return None, None
+
 
     # Finds player spawn position
     p_pos = [1, 1]
-    for row in chr_list:
-        if "<:player:1226622170554171403>" in row:
-            p_pos = [row.index("<:player:1226622170554171403>"), chr_list.index(row)]
-        chr_list[p_pos[0]][p_pos[1]] = "<:bg:1226622165236056226>"
+    try:
+        for row in chr_list:
+            if "<:player:1226622170554171403>" in row:
+                p_pos = [row.index("<:player:1226622170554171403>"), chr_list.index(row)]
+            chr_list[p_pos[0]][p_pos[1]] = "<:bg:1226622165236056226>"
 
-        # return list of lists and player's default position
+            # return list of lists and player's default position
+    except: return chr_list,[1,1]
     return chr_list, p_pos
 
 
@@ -87,18 +86,15 @@ async def on_reaction_add(reaction, user):
     if user == client.user:
         return
 
-    game_index = next(
-        index for index, sublist in enumerate(game_states) if user.id in sublist
-    )
 
     # Check if the reaction is related to an ongoing game
-    if user.id in game_states[game_index]:
+    if user.id in game_states:
 
         # Check if the reaction is the jump reaction
         if str(reaction.emoji) == "\U0001F53C":
 
             # Set the jump variable in the game state
-            game_states[game_index][1] = True
+            game_states[user.id][0] = True
 
             # Remove the reaction so the user can react again
             await reaction.remove(user)
@@ -113,11 +109,15 @@ async def on_message(message):
         return
     if message.content.startswith(cmd + "play"):
 
-        if (message.author.id not in a for a in game_states):
+        if (message.author.id not in game_states):
             # If not, create a new game state
-            game_states.append([message.author.id, False])
+            game_states[message.author.id] = [False]
 
-        board, player_pos = create_level()
+        try:
+            board, player_pos = create_level(message.author.id)
+        except:
+            await message.channel.send("There was an error loading the level. Make sure you entered your level properly.")
+            return
         new_frame = ""
 
         start_col = player_pos[0] - 2
@@ -136,11 +136,6 @@ async def on_message(message):
 
         play = True
 
-        game_index = next(
-            index
-            for index, sublist in enumerate(game_states)
-            if message.author.id in sublist
-        )
 
         jumped = 0
 
@@ -149,21 +144,29 @@ async def on_message(message):
             time.sleep(0.4)
 
             # Checks if the player has ground under them``
-            if board[player_pos[1] + 1][player_pos[0]] == "<:ground:1226622599111376948>":
+            if (
+                board[player_pos[1] + 1][player_pos[0]]
+                == "<:ground:1226622599111376948>"
+            ):
                 jumped = 0
 
             # If the player wants to jump and there's ground below them, jump.
             if (
-                game_states[game_index][1]
-                and board[player_pos[1] + 1][player_pos[0]] == "<:ground:1226622599111376948>"
+                game_states[message.author.id][0]
+                and board[player_pos[1] + 1][player_pos[0]]
+                == "<:ground:1226622599111376948>"
             ):
                 print("jumped")
                 player_pos[1] -= 1
                 jumped = 1
-                game_states[game_index][1] = False
+                game_states[message.author.id][0] = False
 
             # If player is not on ground and is not jumping, moves player down
-            if board[player_pos[1] + 1][player_pos[0]] != "<:ground:1226622599111376948>" and jumped == 0:
+            if (
+                board[player_pos[1] + 1][player_pos[0]]
+                != "<:ground:1226622599111376948>"
+                and jumped == 0
+            ):
                 player_pos[1] += 1
 
             # Checks if the player touches a flag
@@ -182,7 +185,10 @@ async def on_message(message):
                 break
 
             # Checks if the player crashes
-            elif board[player_pos[1]][player_pos[0]] in ["<:spike:1226622178712096860>", "<:ground:1226622599111376948>"]:
+            elif board[player_pos[1]][player_pos[0]] in [
+                "<:spike:1226622178712096860>",
+                "<:ground:1226622599111376948>",
+            ]:
                 embed = discord.Embed(
                     title="Geometry Dash",
                     description="**You lose!**",
@@ -197,7 +203,11 @@ async def on_message(message):
                 break
 
             # Changes player's printed position
-            board[player_pos[1]][player_pos[0]] = "<:playerRotate:1226622172131364984>" if jumped != 0 else "<:player:1226622170554171403>"
+            board[player_pos[1]][player_pos[0]] = (
+                "<:playerRotate:1226622172131364984>"
+                if jumped != 0
+                else "<:player:1226622170554171403>"
+            )
 
             # Checks how far along a jump is at
             if jumped == 1:
@@ -238,9 +248,25 @@ async def on_message(message):
         else:
             await message.channel.send(f"Prefix changed to `{cmd}`!")
 
+    elif message.content.startswith(cmd + "loadLevel"):
+        if message.attachments and message.attachments[0].filename.endswith('.txt'):
+            if (message.author.id not in game_states):
+                # If not, create a new game state
+                game_states[message.author.id] = [False]
+
+            level = await message.attachments[0].read()
+            level = level.decode('utf-8')
+            game_states[message.author.id].append(level)
+            await message.channel.send("Level loaded!")
+
+        else: await message.channel.send("Invalid file, or a server issue.")
+
+            
+
     elif message.content.startswith(cmd + "help"):
         await message.channel.send(
-            "# Commands\n - `changePrefix`: Changes the prefix command.\n - `Play:` Starts a game."
+            "# Commands\n - `changePrefix`: Changes the prefix command.\n - `loadLevel:` Loads a level to play on from a txt file.\n - `Play:` Starts a game using the level you loaded."
+
         )
 
 
