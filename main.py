@@ -30,8 +30,28 @@ emoji_dict = {
     "⬛": "<:ground:1226622599111376948>",
     "-": "<:ground:1226622599111376948> ",
     "🟧": "<:player:1226622170554171403>",
-    "🏁": ":pause_button:"
+    "%": "<:player:1226622170554171403>",
+    "🏁": ":pause_button:",
+    "*": ":pause_button:",
+
+    "C":"<:cube_portal:1226622166842216458>",
+    "🟢":"<:cube_portal:1226622166842216458>",
+    "B":"<:ball_portal:1226622164086554685>",
+    "🔴":"<:ball_portal:1226622164086554685>",
+    "W":"<:wave_portal:1226622463220125736>",
+    "🔵":"<:wave_portal:1226622463220125736>",
+    "U":"<:ufo_portal:1226622182382112939>",
+    "🟠":"<:ufo_portal:1226622182382112939>",
 }
+
+
+gm_dict = {
+    '<:cube_portal:1226622166842216458>': 'Cube', 
+    '<:ball_portal:1226622164086554685>': 'Ball', 
+    '<:wave_portal:1226622463220125736>': 'Wave',
+    '<:ufo_portal:1226622182382112939>': 'Ufo',
+    }
+
 
 
 cmd = "GD-"
@@ -71,6 +91,13 @@ def create_level(user):
             # return list of lists and player's default position
     except: return chr_list,[1,1]
     return chr_list, p_pos
+
+
+def para(a,b,c,x):
+    a = a*(x**2)
+    b = b*x
+
+    return a + b + c
 
 
 @client.event
@@ -135,39 +162,92 @@ async def on_message(message):
         await bot_message.add_reaction("\U0001F53C")
 
         play = True
+        gamemode = "Cube"
 
-
+        gravity = 0
         jumped = 0
+
 
         while play:
 
             time.sleep(0.4)
 
-            # Checks if the player has ground under them``
-            if (
-                board[player_pos[1] + 1][player_pos[0]]
-                == "<:ground:1226622599111376948>"
-            ):
-                jumped = 0
+            if gamemode == "Cube":
+                # Checks if the player has ground under them``
+                if (
+                    (board[player_pos[1] + 1][player_pos[0]]
+                    == "<:ground:1226622599111376948>" and not gravity)
+             
+                    (board[player_pos[1] - 1][player_pos[0]] == "<:ground:1226622599111376948>" and gravity)
+                ):
+                    jumped = 0
 
-            # If the player wants to jump and there's ground below them, jump.
-            if (
-                game_states[message.author.id][0]
-                and board[player_pos[1] + 1][player_pos[0]]
-                == "<:ground:1226622599111376948>"
-            ):
-                print("jumped")
-                player_pos[1] -= 1
-                jumped = 1
-                game_states[message.author.id][0] = False
+                # If the player wants to jump and there's ground below them, jump.
+                if (
+                    (game_states[message.author.id][0]
+                    and board[player_pos[1] + 1][player_pos[0]]
+                    == "<:ground:1226622599111376948>"
+                    and not gravity)
+                ):
+                    player_pos[1] -= 1
+                    jumped = 1
+                    game_states[message.author.id][0] = False
+
+                if (
+                    game_states[message.author.id][0]
+                    and board[player_pos[1] - 1][player_pos[0]]
+                    == "<:ground:1226622599111376948>"
+                    and gravity
+                ):
+                    player_pos[1] += 1
+                    jumped = 1
+                    game_states[message.author.id][0] = False
+
+
+            elif gamemode == "Ufo":
+
+                if game_states[message.author.id][0] and not gravity:
+                    player_pos -= 1
+                    jumped = 1
+                    game_states[message.author.id][0] = False
+                
+                elif game_states[message.author.id][0] and gravity:
+                    player_pos += 1
+                    jumped = 1
+                    game_states[message.author.id][0] = False
+
+            elif gamemode == "Ball":
+                if (
+                    (game_states[message.author.id][0]
+                    and board[player_pos[1] + 1][player_pos[0]]
+                    == "<:ground:1226622599111376948>"
+                    and not gravity)
+                or
+                    (game_states[message.author.id][0]
+                    and board[player_pos[1] - 1][player_pos[0]]
+                    == "<:ground:1226622599111376948>"
+                    and gravity)):
+
+                    gravity = not gravity
+                    game_states[message.author.id][0] = False
+            
+            elif gamemode == "Wave":
+                if game_states[message.author.id][0]: gravity = not gravity; game_states[message.author.id][0] = False
 
             # If player is not on ground and is not jumping, moves player down
             if (
                 board[player_pos[1] + 1][player_pos[0]]
                 != "<:ground:1226622599111376948>"
-                and jumped == 0
+                and jumped == 0 and not gravity
             ):
                 player_pos[1] += 1
+
+            elif (
+                board[player_pos[1] - 1][player_pos[0]]
+                != "<:ground:1226622599111376948>"
+                and jumped == 0 and gravity
+            ):
+                player_pos[1] -= 1
 
             # Checks if the player touches a flag
             if board[player_pos[1]][player_pos[0]] == ":pause_button:":
@@ -202,11 +282,27 @@ async def on_message(message):
                 play = False
                 break
 
+            #Checks if player needs to change gamemode
+            elif board[player_pos[1]][player_pos[0]] in gm_dict:
+                gamemode = gm_dict[board[player_pos[1]][player_pos[0]]]
+
+
             # Changes player's printed position
-            board[player_pos[1]][player_pos[0]] = (
-                "<:playerRotate:1226622172131364984>"
-                if jumped != 0
-                else "<:player:1226622170554171403>"
+            if gamemode == "Cube":
+            
+                board[player_pos[1]][player_pos[0]] = (
+                    "<:playerRotate:1226622172131364984>"
+                    if jumped != 0
+                    else "<:player:1226622170554171403>"
+                )
+
+            elif gamemode == "Ufo": board[player_pos[1]][player_pos[0]] = "<:player_ufo:1227503730870583296>"
+            elif gamemode == "Ball": board[player_pos[1]][player_pos[0]] = "<:player_ball:1227503726424621066>"
+
+            elif gamemode == "Wave": board[player_pos[1]][player_pos[0]] = (
+                "\<:player_wave1:1227503729029156875>"
+                if not gravity
+                else "<:player_wave2:1227503727846363146>"
             )
 
             # Checks how far along a jump is at
