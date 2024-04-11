@@ -27,10 +27,10 @@ Q: My level won't load!
 **A: Did you put the level in a .txt file? Did you spell the command correctly? Do you have a player model and a finish in the level? Did you add a character the bot doesn't recognize to your txt file?**
 
 Q: The level editor sucks!
-**Yep, it does. I hate writing HTML and avoid it at all costs. Write a better one if it bothers you that much :)**
+**A: Yep, it does. I hate writing HTML and avoid it at all costs. Write a better one if it bothers you that much :)**
 
 Q: There's so much latency!
-**I'm working on it, okay? Inherently, any form of interaction will take a hot second to be processed by the bot. I'll keep searching for a way to make it better, but we might get stuck with one frame of latency. In which case, do you want a higher gamespeed or lower latency? Your choice, buddy.**
+**A: I'm working on it, okay? Inherently, any form of interaction will take a hot second to be processed by the bot. I'll keep searching for a way to make it better, but we might get stuck with one frame of latency. In which case, do you want a higher gamespeed or lower latency? Your choice, buddy.**
 
 Q: Are you ever going to implement hold gamemodes? (Ship, Robot, etc) What about Swingcopter?
-A: **Nope. Tell me how you expect me to implement hold detection when the game is controlled by reactions. As for swingcopter, I think I'd rather die than learn parabola math :)
+**A: Nope. Tell me how you expect me to implement hold detection when the game is controlled by reactions. As for swingcopter, I think I'd rather die than learn parabola math :)**
