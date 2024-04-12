@@ -28,7 +28,7 @@ emoji_dict = {
     "^": "<:spike:1226622178712096860>",
     "🔺": "<:spike:1226622178712096860>",
     "⬛": "<:ground:1226622599111376948>",
-    "-": "<:ground:1226622599111376948> ",
+    "-": "<:ground:1226622599111376948>",
     "🟧": "<:player:1226622170554171403>",
     "%": "<:player:1226622170554171403>",
     "🏁": ":pause_button:",
@@ -177,7 +177,7 @@ async def on_message(message):
                 if (
                     (board[player_pos[1] + 1][player_pos[0]]
                     == "<:ground:1226622599111376948>" and not gravity)
-             
+                    or
                     (board[player_pos[1] - 1][player_pos[0]] == "<:ground:1226622599111376948>" and gravity)
                 ):
                     jumped = 0
@@ -193,7 +193,7 @@ async def on_message(message):
                     jumped = 1
                     game_states[message.author.id][0] = False
 
-                if (
+                elif (
                     game_states[message.author.id][0]
                     and board[player_pos[1] - 1][player_pos[0]]
                     == "<:ground:1226622599111376948>"
