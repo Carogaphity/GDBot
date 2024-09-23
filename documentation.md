@@ -60,5 +60,5 @@ There's an option to clear the grid and remove all sprites, leaving empty space 
 
 
 ### Private Hosting
-So, you're interested in hosting the bot yourself, huh? Maybe make some modifications that I can't get off my ass to go do? Well lucky for you, it's actually incredibly simple. Download main.py from the github repo, open it up in your IDE, and add a file called ".env". Inside of `.env`, put the line `DISCORD_TOKEN=` followed by your discord bot token **not in a string**. You can get your bot token from [here](https://discord.com/developers/). Then, just save the file, make sure all your dependencies are installed (`pip install discord`), and press run. Add your bot to your server, and it should come online :)
+So, you're interested in hosting the bot yourself, huh? Maybe make some modifications that I can't get off my ass to go do? Well lucky for you, it's actually incredibly simple. Download main.py from the github repo, open it up in your IDE, and add a file called ".env". Inside of `.env`, put the line `DISCORD_TOKEN=` followed by your discord bot token **not in a string**. You can get your bot token from [here](https://discord.com/developers/). Then, just save the file, make sure all your dependencies are installed (`pip install py-cord`), and press run. Add your bot to your server, and it should come online :)
 
