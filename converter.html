@@ -15,16 +15,13 @@
       grid-template-columns: repeat(20, 30px);
       grid-template-rows: repeat(10, 30px);
       gap: 1px;
-      position: relative;
-      border: 1px solid #333;
-      resize: both;
-      overflow: hidden;
     }
 
+    /* Updated CSS with hex code for background color */
     .grid-item {
       width: 30px;
       height: 30px;
-      background-color: #55acee;
+      background-color: #55acee; /* Updated background color */
       border: 1px solid #ccc;
     }
 
@@ -34,7 +31,6 @@
       background-size: contain;
       background-repeat: no-repeat;
     }
-
     .toolbar {
       display: flex;
       justify-content: center;
@@ -43,21 +39,17 @@
       background-color: #333;
       color: #fff;
     }
-
     .toolbar button {
-      margin: 0 5px;
+      margin: 0 10px;
       padding: 5px 10px;
       background-color: #666;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      color: white;
     }
-
     .toolbar button.selected {
-      background-color: #888;
+      background-color: #888; /* Lighter shade for selected button */
     }
-
     .export-container {
       margin-top: 20px;
       padding: 10px;
@@ -80,13 +72,15 @@
   <button onclick="selectSprite('cube_portal')" id="cubeBtn">Cube Portal</button>
   <button onclick="selectSprite('finish')" id="finishBtn">Finish</button>
   <button onclick="selectSprite('player')" id="playerBtn">Player</button>
+  <!-- Add more buttons for additional sprite types as needed -->
   <button onclick="activateRectangleTool()" id="rectangleBtn">Rectangle Tool</button>
-  <button onclick="selectSprite('air')" id="airBtn">Air</button>
   <button onclick="exportLevel()">Export</button>
   <button onclick="cleargrid()">Clear</button>
 </div>
 
-<div class="export-container" id="exportContainer"></div>
+<div class="export-container" id="exportContainer">
+  <!-- Exported level text will be displayed here -->
+</div>
 
 <script>
   let selectedSprite = null;
@@ -95,24 +89,15 @@
 
   // Create the grid dynamically
   const gridContainer = document.getElementById('grid');
-  let gridColumns = 20;
-  let gridRows = 10;
+  const gridSize = 20 * 10; // 20 columns and 10 rows
 
-  function createGrid(columns, rows) {
-    gridContainer.style.gridTemplateColumns = `repeat(${columns}, 30px)`;
-    gridContainer.style.gridTemplateRows = `repeat(${rows}, 30px)`;
-    gridContainer.innerHTML = ''; // Clear existing grid
-
-    for (let i = 0; i < columns * rows; i++) {
-      const gridItem = document.createElement('div');
-      gridItem.className = 'grid-item';
-      gridItem.setAttribute('data-index', i);
-      gridItem.addEventListener('click', handleGridItemClick);
-      gridContainer.appendChild(gridItem);
-    }
+  for (let i = 0; i < gridSize; i++) {
+    const gridItem = document.createElement('div');
+    gridItem.className = 'grid-item';
+    gridItem.setAttribute('data-index', i);
+    gridItem.addEventListener('click', handleGridItemClick);
+    gridContainer.appendChild(gridItem);
   }
-
-  createGrid(gridColumns, gridRows);
 
   // Handle grid item click event
   function handleGridItemClick(event) {
@@ -129,11 +114,7 @@
         resetButtonStyles();
       }
     } else if (selectedSprite) {
-      if (selectedSprite === 'air') {
-        gridItem.innerHTML = ''; // Clear the sprite
-      } else {
-        addSprite(gridItem, selectedSprite);
-      }
+      addSprite(gridItem, selectedSprite);
     }
   }
 
@@ -147,6 +128,7 @@
     }
   }
 
+  // Activate rectangle tool
   function activateRectangleTool() {
     rectangleToolActive = true;
     firstClickIndex = null; // Reset first click index
@@ -157,6 +139,7 @@
     }
   }
 
+  // Add sprite to the grid item
   function addSprite(gridItem, spriteType) {
     const sprite = document.createElement('div');
     sprite.className = 'sprite';
@@ -165,97 +148,122 @@
     gridItem.appendChild(sprite);
   }
 
+  // Fill rectangle between two indices
   function fillRectangle(startIndex, endIndex) {
     const minIndex = Math.min(startIndex, endIndex);
     const maxIndex = Math.max(startIndex, endIndex);
     const gridItems = document.querySelectorAll('.grid-item');
 
-    const startRow = Math.floor(minIndex / gridColumns);
-    const endRow = Math.floor(maxIndex / gridColumns);
+    const startRow = Math.floor(minIndex / 20);
+    const endRow = Math.floor(maxIndex / 20);
 
-    const startCol = minIndex % gridColumns;
-    const endCol = maxIndex % gridColumns;
+    const startCol = minIndex % 20;
+    const endCol = maxIndex % 20;
 
     for (let row = startRow; row <= endRow; row++) {
       for (let col = startCol; col <= endCol; col++) {
-        const index = row * gridColumns + col;
+        const index = row * 20 + col;
         addSprite(gridItems[index], selectedSprite);
       }
     }
   }
 
+  // Function to export the level
   function exportLevel() {
-    const gridItems = document.querySelectorAll('.grid-item');
-    let levelText = '';
+      const gridItems = document.querySelectorAll('.grid-item');
+      let levelText = '';
 
-    gridItems.forEach((item, index) => {
-      const sprite = item.querySelector('.sprite');
-      levelText += sprite ? getSpriteKey(sprite.style.backgroundImage) : '.';
+      gridItems.forEach((item, index) => {
+          const sprites = item.querySelectorAll('.sprite');
 
-      if ((index + 1) % gridColumns === 0) {
-        levelText += '\n';
-      }
-    });
+          // Get the topmost sprite (latest sprite added - consider z-index or order)
+          const sprite = sprites[sprites.length - 1];
 
-    const blob = new Blob([levelText], { type: 'text/plain' });
-    const downloadLink = document.createElement('a');
-    downloadLink.href = URL.createObjectURL(blob);
-    downloadLink.download = 'level.txt';
-    downloadLink.click();
+          if (sprite) {
+              levelText += getSpriteKey(sprite.style.backgroundImage) || '.';
+          } else {
+              levelText += '.';
+          }
+
+          if ((index + 1) % 20 === 0) {
+              levelText += '\n';
+          }
+      });
+
+      // Create a Blob with the level text
+      const blob = new Blob([levelText], { type: 'text/plain' });
+
+      // Create a temporary anchor element to trigger the download
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = 'level.txt';
+      downloadLink.click();
   }
 
+  // Place air (empty space)
   function cleargrid() {
     const gridItems = document.querySelectorAll('.grid-item');
     gridItems.forEach(item => item.innerHTML = '');
   }
 
+  // Function to reset button styles
   function resetButtonStyles() {
     const buttons = document.querySelectorAll('.toolbar button');
     buttons.forEach(button => button.classList.remove('selected'));
   }
 
+  // Function to get sprite URL based on sprite type
   function getSpriteUrl(spriteType) {
+    // Here, you would have a mapping of sprite types to their respective image URLs
+    // For simplicity, I'm using placeholder URLs
     switch (spriteType) {
       case 'block':
         return 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/block.png';
-      case 'air':
-        return '';
+      case 'spike':
+        return 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/spike.png';
+      case 'ball_portal':
+        return 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/ball_p.png';
+      case 'wave_portal':
+        return 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/wave_p.png';
+      case 'cube_portal':
+        return 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube_p.png';
+      case 'ufo_portal':
+        return 'https://github.com/Carogaphity/GDBot/blob/pycord-port/assets/ufo_p.png?raw=true';
+      case 'finish':
+        return 'https://via.placeholder.com/30x30?text=Finish';
+      case 'player':
+        return 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube2.png';
+      // Add cases for additional sprite types as needed
       default:
-        return 'https://via.placeholder.com/30'; // Placeholder URL
+        return 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/air.png';
     }
   }
 
+  // Function to get sprite key based on sprite URL
   function getSpriteKey(backgroundImage) {
-    switch (backgroundImage) {
-      case 'url("https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/block.png")':
+    const url = backgroundImage.replace(/^url\(['"](.+)['"]\)$/, '$1');
+    switch (url) {
+      case 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/block.png':
         return '-';
+      case 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/spike.png':
+        return '^';
+      case 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/ball_p.png':
+        return 'B';
+      case 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/wave_p.png':
+        return 'W';
+      case 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube_p.png':
+        return 'C';
+      case 'https://github.com/Carogaphity/GDBot/blob/pycord-port/assets/ufo_p.png?raw=true':
+        return 'U';
+      case 'https://via.placeholder.com/30x30?text=Finish':
+        return '*';
+      case 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube2.png':
+        return '%';
+      // Add cases for additional sprite URLs as needed
       default:
         return null;
     }
   }
-
-  let isResizing = false;
-  gridContainer.addEventListener('mousedown', (e) => {
-    if (e.offsetX > gridContainer.offsetWidth - 10 || e.offsetY > gridContainer.offsetHeight - 10) {
-      isResizing = true;
-    }
-  });
-
-  document.addEventListener('mousemove', (e) => {
-    if (isResizing) {
-      let newColumns = Math.max(1, Math.round(e.clientX / 30));
-      let newRows = Math.max(1, Math.round(e.clientY / 30));
-      if (newColumns !== gridColumns || newRows !== gridRows) {
-        gridColumns = newColumns;
-        gridRows = newRows;
-        createGrid(gridColumns, gridRows);
-      }
-    }
-  });
-
-  document.addEventListener('mouseup', () => {
-    isResizing = false;
-  });
 </script>
 
 </body>
