@@ -15,13 +15,16 @@
       grid-template-columns: repeat(20, 30px);
       grid-template-rows: repeat(10, 30px);
       gap: 1px;
+      position: relative;
+      border: 1px solid #333;
+      resize: both;
+      overflow: hidden;
     }
 
-    /* Updated CSS with hex code for background color */
     .grid-item {
       width: 30px;
       height: 30px;
-      background-color: #55acee; /* Updated background color */
+      background-color: #55acee;
       border: 1px solid #ccc;
     }
 
@@ -31,6 +34,7 @@
       background-size: contain;
       background-repeat: no-repeat;
     }
+
     .toolbar {
       display: flex;
       justify-content: center;
@@ -39,17 +43,21 @@
       background-color: #333;
       color: #fff;
     }
+
     .toolbar button {
-      margin: 0 10px;
+      margin: 0 5px;
       padding: 5px 10px;
       background-color: #666;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      color: white;
     }
+
     .toolbar button.selected {
-      background-color: #888; /* Lighter shade for selected button */
+      background-color: #888;
     }
+
     .export-container {
       margin-top: 20px;
       padding: 10px;
@@ -72,15 +80,13 @@
   <button onclick="selectSprite('cube_portal')" id="cubeBtn">Cube Portal</button>
   <button onclick="selectSprite('finish')" id="finishBtn">Finish</button>
   <button onclick="selectSprite('player')" id="playerBtn">Player</button>
-  <!-- Add more buttons for additional sprite types as needed -->
   <button onclick="activateRectangleTool()" id="rectangleBtn">Rectangle Tool</button>
+  <button onclick="selectSprite('air')" id="airBtn">Air</button>
   <button onclick="exportLevel()">Export</button>
-  <button onclick="placeAir()">Air</button>
+  <button onclick="cleargrid()">Clear</button>
 </div>
 
-<div class="export-container" id="exportContainer">
-  <!-- Exported level text will be displayed here -->
-</div>
+<div class="export-container" id="exportContainer"></div>
 
 <script>
   let selectedSprite = null;
@@ -89,15 +95,24 @@
 
   // Create the grid dynamically
   const gridContainer = document.getElementById('grid');
-  const gridSize = 20 * 10; // 20 columns and 10 rows
+  let gridColumns = 20;
+  let gridRows = 10;
 
-  for (let i = 0; i < gridSize; i++) {
-    const gridItem = document.createElement('div');
-    gridItem.className = 'grid-item';
-    gridItem.setAttribute('data-index', i);
-    gridItem.addEventListener('click', handleGridItemClick);
-    gridContainer.appendChild(gridItem);
+  function createGrid(columns, rows) {
+    gridContainer.style.gridTemplateColumns = `repeat(${columns}, 30px)`;
+    gridContainer.style.gridTemplateRows = `repeat(${rows}, 30px)`;
+    gridContainer.innerHTML = ''; // Clear existing grid
+
+    for (let i = 0; i < columns * rows; i++) {
+      const gridItem = document.createElement('div');
+      gridItem.className = 'grid-item';
+      gridItem.setAttribute('data-index', i);
+      gridItem.addEventListener('click', handleGridItemClick);
+      gridContainer.appendChild(gridItem);
+    }
   }
+
+  createGrid(gridColumns, gridRows);
 
   // Handle grid item click event
   function handleGridItemClick(event) {
@@ -114,7 +129,11 @@
         resetButtonStyles();
       }
     } else if (selectedSprite) {
-      addSprite(gridItem, selectedSprite);
+      if (selectedSprite === 'air') {
+        gridItem.innerHTML = ''; // Clear the sprite
+      } else {
+        addSprite(gridItem, selectedSprite);
+      }
     }
   }
 
@@ -128,7 +147,6 @@
     }
   }
 
-  // Activate rectangle tool
   function activateRectangleTool() {
     rectangleToolActive = true;
     firstClickIndex = null; // Reset first click index
@@ -139,7 +157,6 @@
     }
   }
 
-  // Add sprite to the grid item
   function addSprite(gridItem, spriteType) {
     const sprite = document.createElement('div');
     sprite.className = 'sprite';
@@ -148,122 +165,97 @@
     gridItem.appendChild(sprite);
   }
 
-  // Fill rectangle between two indices
   function fillRectangle(startIndex, endIndex) {
     const minIndex = Math.min(startIndex, endIndex);
     const maxIndex = Math.max(startIndex, endIndex);
     const gridItems = document.querySelectorAll('.grid-item');
 
-    const startRow = Math.floor(minIndex / 20);
-    const endRow = Math.floor(maxIndex / 20);
+    const startRow = Math.floor(minIndex / gridColumns);
+    const endRow = Math.floor(maxIndex / gridColumns);
 
-    const startCol = minIndex % 20;
-    const endCol = maxIndex % 20;
+    const startCol = minIndex % gridColumns;
+    const endCol = maxIndex % gridColumns;
 
     for (let row = startRow; row <= endRow; row++) {
       for (let col = startCol; col <= endCol; col++) {
-        const index = row * 20 + col;
+        const index = row * gridColumns + col;
         addSprite(gridItems[index], selectedSprite);
       }
     }
   }
 
-  // Function to export the level
   function exportLevel() {
-      const gridItems = document.querySelectorAll('.grid-item');
-      let levelText = '';
+    const gridItems = document.querySelectorAll('.grid-item');
+    let levelText = '';
 
-      gridItems.forEach((item, index) => {
-          const sprites = item.querySelectorAll('.sprite');
+    gridItems.forEach((item, index) => {
+      const sprite = item.querySelector('.sprite');
+      levelText += sprite ? getSpriteKey(sprite.style.backgroundImage) : '.';
 
-          // Get the topmost sprite (latest sprite added - consider z-index or order)
-          const sprite = sprites[sprites.length - 1];
+      if ((index + 1) % gridColumns === 0) {
+        levelText += '\n';
+      }
+    });
 
-          if (sprite) {
-              levelText += getSpriteKey(sprite.style.backgroundImage) || '.';
-          } else {
-              levelText += '.';
-          }
-
-          if ((index + 1) % 20 === 0) {
-              levelText += '\n';
-          }
-      });
-
-      // Create a Blob with the level text
-      const blob = new Blob([levelText], { type: 'text/plain' });
-
-      // Create a temporary anchor element to trigger the download
-      const downloadLink = document.createElement('a');
-      downloadLink.href = URL.createObjectURL(blob);
-      downloadLink.download = 'level.txt';
-      downloadLink.click();
+    const blob = new Blob([levelText], { type: 'text/plain' });
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = 'level.txt';
+    downloadLink.click();
   }
 
-  // Place air (empty space)
-  function placeAir() {
+  function cleargrid() {
     const gridItems = document.querySelectorAll('.grid-item');
     gridItems.forEach(item => item.innerHTML = '');
   }
 
-  // Function to reset button styles
   function resetButtonStyles() {
     const buttons = document.querySelectorAll('.toolbar button');
     buttons.forEach(button => button.classList.remove('selected'));
   }
 
-  // Function to get sprite URL based on sprite type
   function getSpriteUrl(spriteType) {
-    // Here, you would have a mapping of sprite types to their respective image URLs
-    // For simplicity, I'm using placeholder URLs
     switch (spriteType) {
       case 'block':
-        return 'https://media.discordapp.net/attachments/1227841153747910759/1227841275479195739/square_01_001.png?ex=6629df4c&is=66176a4c&hm=5035fd48a0bda22dd3f857078964e60a80c953b7c1ffe263e425e76a7672e22b&=&format=webp&quality=lossless';
-      case 'spike':
-        return 'https://media.discordapp.net/attachments/1227841153747910759/1227841243266945045/spike_01_001.png?ex=6629df44&is=66176a44&hm=e4e23c19549dfd4c6d94923d55404d06200853d183b85ec298e6ea06a42d97bb&=&format=webp&quality=lossless';
-      case 'ball_portal':
-        return 'https://media.discordapp.net/attachments/1227841153747910759/1227841240389914674/ball_portal.png?ex=6629df43&is=66176a43&hm=16fb1c300e7f60bb9a9f57b6012708ee7fbe54200283ffc51e24830f11484a4d&=&format=webp&quality=lossless';
-      case 'wave_portal':
-        return 'https://media.discordapp.net/attachments/1227841153747910759/1227841275970064404/wave_portal.png?ex=6629df4c&is=66176a4c&hm=fb3cf0598e975085301ef617a4a34e26767e8734fa9760e3610895878f92f7d8';
-      case 'cube_portal':
-        return 'https://media.discordapp.net/attachments/1227841153747910759/1227841240981311628/cube_portal.png?ex=6629df44&is=66176a44&hm=4e6f2c823698eb53ccc42184&=&format=webp&quality=lossless';
-      case 'ufo_portal':
-        return 'https://media.discordapp.net/attachments/1227841153747910759/1227841275688914995/ufo_portal.png?ex=6629df4c&is=66176a4c&hm=43813233a13394bcab8d2ca17a11af0b327bd38124c47afb4f5baa14b761c804&=&format=webp&quality=lossless';
-      case 'finish':
-        return 'https://via.placeholder.com/30x30?text=Finish';
-      case 'player':
-        return 'https://media.discordapp.net/attachments/1227841153747910759/1227841275177209856/player.png?ex=6629df4c&is=66176a4c&hm=6278f141e37737fb498f4d175226f5d68bf175002c306ae03526da6e9651041a&=&format=webp&quality=lossless';
-      // Add cases for additional sprite types as needed
-      default:
+        return 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/block.png';
+      case 'air':
         return '';
+      default:
+        return 'https://via.placeholder.com/30'; // Placeholder URL
     }
   }
 
-  // Function to get sprite key based on sprite URL
   function getSpriteKey(backgroundImage) {
-    const url = backgroundImage.replace(/^url\(['"](.+)['"]\)$/, '$1');
-    switch (url) {
-      case 'https://media.discordapp.net/attachments/1227841153747910759/1227841275479195739/square_01_001.png?ex=6629df4c&is=66176a4c&hm=5035fd48a0bda22dd3f857078964e60a80c953b7c1ffe263e425e76a7672e22b&=&format=webp&quality=lossless':
+    switch (backgroundImage) {
+      case 'url("https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/block.png")':
         return '-';
-      case 'https://media.discordapp.net/attachments/1227841153747910759/1227841243266945045/spike_01_001.png?ex=6629df44&is=66176a44&hm=e4e23c19549dfd4c6d94923d55404d06200853d183b85ec298e6ea06a42d97bb&=&format=webp&quality=lossless':
-        return '^';
-      case 'https://media.discordapp.net/attachments/1227841153747910759/1227841240389914674/ball_portal.png?ex=6629df43&is=66176a43&hm=16fb1c300e7f60bb9a9f57b6012708ee7fbe54200283ffc51e24830f11484a4d&=&format=webp&quality=lossless':
-        return 'B';
-      case 'https://media.discordapp.net/attachments/1227841153747910759/1227841275970064404/wave_portal.png?ex=6629df4c&is=66176a4c&hm=fb3cf0598e975085301ef617a4a34e26767e8734fa9760e3610895878f92f7d8':
-        return 'W';
-      case 'https://media.discordapp.net/attachments/1227841153747910759/1227841240981311628/cube_portal.png?ex=6629df44&is=66176a44&hm=c88b8b03e0d2946e2f196478b9f98cfe68fba7b44e6f2c823698eb53ccc42184&=&format=webp&quality=lossless':
-        return 'C';
-      case 'https://media.discordapp.net/attachments/1227841153747910759/1227841275688914995/ufo_portal.png?ex=6629df4c&is=66176a4c&hm=43813233a13394bcab8d2ca17a11af0b327bd38124c47afb4f5baa14b761c804':
-        return 'U';
-      case 'https://via.placeholder.com/30x30?text=Finish':
-        return '*';
-      case 'https://media.discordapp.net/attachments/1227841153747910759/1227841275177209856/player.png?ex=6629df4c&is=66176a4c&hm=6278f141e37737fb498f4d175226f5d68bf175002c306ae03526da6e9651041a&=&format=webp&quality=lossless':
-        return '%';
-      // Add cases for additional sprite URLs as needed
       default:
         return null;
     }
   }
+
+  let isResizing = false;
+  gridContainer.addEventListener('mousedown', (e) => {
+    if (e.offsetX > gridContainer.offsetWidth - 10 || e.offsetY > gridContainer.offsetHeight - 10) {
+      isResizing = true;
+    }
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (isResizing) {
+      let newColumns = Math.max(1, Math.round(e.clientX / 30));
+      let newRows = Math.max(1, Math.round(e.clientY / 30));
+      if (newColumns !== gridColumns || newRows !== gridRows) {
+        gridColumns = newColumns;
+        gridRows = newRows;
+        createGrid(gridColumns, gridRows);
+      }
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    isResizing = false;
+  });
 </script>
 
 </body>
