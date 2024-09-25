@@ -71,6 +71,7 @@
       width: 50px;
       height: 50px;
       background-color: transparent;
+      transition: background-color 0.3s; /* Added transition for smooth effect */
     }
 
     .toolbar button .sprite {
@@ -85,7 +86,8 @@
     }
 
     .toolbar button.selected {
-      opacity: 0.8;
+      background-color: #d3d3d3; /* Lighter gray background for selected buttons */
+      opacity: 1; /* Ensure full opacity */
     }
 
     .export-container {
@@ -112,16 +114,16 @@
   <button onclick="selectSprite('spike')" id="spikeBtn">
     <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/spike.png');"></div>
   </button>
-  <button onclick="selectSprite('ball_portal')" id="ballBtn">
+  <button onclick="selectSprite('ball_portal')" id="ball_portalBtn">
     <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/ball_p.png');"></div>
   </button>
-  <button onclick="selectSprite('wave_portal')" id="waveBtn">
+  <button onclick="selectSprite('wave_portal')" id="wave_portalBtn">
     <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/wave_p.png');"></div>
   </button>
-  <button onclick="selectSprite('cube_portal')" id="cubeBtn">
+  <button onclick="selectSprite('cube_portal')" id="cube_portalBtn">
     <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube_p.png');"></div>
   </button>
-  <button onclick="selectSprite('ufo_portal')" id="ufoBtn">
+  <button onclick="selectSprite('ufo_portal')" id="ufo_portalBtn">
     <div class="sprite" style="background-image: url('https://github.com/Carogaphity/GDBot/blob/pycord-port/assets/ufo_p.png?raw=true');"></div>
   </button>
   <button onclick="selectSprite('finish')" id="finishBtn">
@@ -143,6 +145,7 @@
     <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/trash.png');"></div>
   </button>
 </div>
+
 
 <div class="export-container" id="exportContainer"></div>
 
@@ -185,9 +188,10 @@
     resetButtonStyles();
     document.getElementById(`${spriteType}Btn`).classList.add('selected');
     if (rectangleToolActive) {
-      document.getElementById('rectangleBtn').classList.add('selected');
+        document.getElementById('rectangleBtn').classList.add('selected');
     }
-  }
+}
+
 
   function activateRectangleTool() {
     rectangleToolActive = true;
