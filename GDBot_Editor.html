@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GD In a Bot Level Editor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f0f0f0;
+      background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/bg.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+    
+    .header {
+      margin: 20px 0;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(20, 30px);
+      grid-template-rows: repeat(10, 30px);
+      gap: 1px;
+      border: 5px solid #333;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 5px;
+    }
+    
+    .grid-item {
+      width: 30px;
+      height: 30px;
+      background-color: #55acee;
+      border: 1px solid #ccc;
+      position: relative;
+    }
+    
+    .sprite {
+      width: 100%;
+      height: 100%;
+      background-size: contain;
+      background-repeat: no-repeat;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    
+    .toolbar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 50px;
+      background-color: #333;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    
+    .toolbar button {
+      position: relative;
+      margin: 0 5px;
+      padding: 0;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 50px;
+      height: 50px;
+      background-color: transparent;
+    }
+
+    .toolbar button .sprite {
+      width: 30px;
+      height: 30px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .toolbar button.selected {
+      opacity: 0.8;
+    }
+
+    .export-container {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <img src="https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/logo%20-%20GDBot%20Level%20Editor%20(1).png" alt="GDBot Level Editor Logo" style="max-width: 900px;">
+</div>
+
+<div class="grid-container" id="grid">
+</div>
+
+<div class="toolbar">
+  <button onclick="selectSprite('block')" id="blockBtn">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/block.png');"></div>
+  </button>
+  <button onclick="selectSprite('spike')" id="spikeBtn">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/spike.png');"></div>
+  </button>
+  <button onclick="selectSprite('ball_portal')" id="ballBtn">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/ball_p.png');"></div>
+  </button>
+  <button onclick="selectSprite('wave_portal')" id="waveBtn">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/wave_p.png');"></div>
+  </button>
+  <button onclick="selectSprite('cube_portal')" id="cubeBtn">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube_p.png');"></div>
+  </button>
+  <button onclick="selectSprite('ufo_portal')" id="ufoBtn">
+    <div class="sprite" style="background-image: url('https://github.com/Carogaphity/GDBot/blob/pycord-port/assets/ufo_p.png?raw=true');"></div>
+  </button>
+  <button onclick="selectSprite('finish')" id="finishBtn">
+    <div class="sprite" style="background-image: url('https://via.placeholder.com/30x30?text=Finish');"></div>
+  </button>
+  <button onclick="selectSprite('player')" id="playerBtn">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube2.png');"></div>
+  </button>
+  <button onclick="selectSprite('air')" id="airBtn">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/air.png');"></div>
+  </button>
+  <button onclick="activateRectangleTool()" id="rectangleBtn">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/rectangle.png');"></div>
+  </button>
+  <button onclick="exportLevel()">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/export.png');"></div>
+  </button>
+  <button onclick="placeAir()">
+    <div class="sprite" style="background-image: url('https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/trash.png');"></div>
+  </button>
+</div>
+
+<div class="export-container" id="exportContainer"></div>
+
+<script>
+  let selectedSprite = null;
+  let rectangleToolActive = false;
+  let firstClickIndex = null;
+
+  const gridContainer = document.getElementById('grid');
+  const gridSize = 20 * 10;
+
+  for (let i = 0; i < gridSize; i++) {
+    const gridItem = document.createElement('div');
+    gridItem.className = 'grid-item';
+    gridItem.setAttribute('data-index', i);
+    gridItem.addEventListener('click', handleGridItemClick);
+    gridContainer.appendChild(gridItem);
+  }
+
+  function handleGridItemClick(event) {
+    const gridItem = event.currentTarget;
+    const selectedIndex = parseInt(gridItem.getAttribute('data-index'));
+
+    if (rectangleToolActive) {
+      if (firstClickIndex === null) {
+        firstClickIndex = selectedIndex;
+      } else {
+        fillRectangle(firstClickIndex, selectedIndex);
+        firstClickIndex = null;
+        rectangleToolActive = false;
+        resetButtonStyles();
+      }
+    } else if (selectedSprite) {
+      addSprite(gridItem, selectedSprite);
+    }
+  }
+
+  function selectSprite(spriteType) {
+    selectedSprite = spriteType;
+    resetButtonStyles();
+    document.getElementById(`${spriteType}Btn`).classList.add('selected');
+    if (rectangleToolActive) {
+      document.getElementById('rectangleBtn').classList.add('selected');
+    }
+  }
+
+  function activateRectangleTool() {
+    rectangleToolActive = true;
+    firstClickIndex = null;
+    resetButtonStyles();
+    document.getElementById('rectangleBtn').classList.add('selected');
+    if (selectedSprite) {
+      document.getElementById(`${selectedSprite}Btn`).classList.add('selected');
+    }
+  }
+
+  function addSprite(gridItem, spriteType) {
+    gridItem.innerHTML = '';
+
+    const sprite = document.createElement('div');
+    sprite.className = 'sprite';
+    sprite.style.backgroundImage = `url(${getSpriteUrl(spriteType)})`;
+    gridItem.appendChild(sprite);
+  }
+
+  function fillRectangle(startIndex, endIndex) {
+    const minIndex = Math.min(startIndex, endIndex);
+    const maxIndex = Math.max(startIndex, endIndex);
+    const gridItems = document.querySelectorAll('.grid-item');
+
+    const startRow = Math.floor(minIndex / 20);
+    const endRow = Math.floor(maxIndex / 20);
+    const startCol = minIndex % 20;
+    const endCol = maxIndex % 20;
+
+    for (let row = startRow; row <= endRow; row++) {
+      for (let col = startCol; col <= endCol; col++) {
+        const index = row * 20 + col;
+        addSprite(gridItems[index], selectedSprite);
+      }
+    }
+  }
+
+  function exportLevel() {
+    const gridItems = document.querySelectorAll('.grid-item');
+    let levelText = '';
+
+    gridItems.forEach((item, index) => {
+      const sprite = item.querySelector('.sprite');
+      levelText += sprite ? getSpriteKey(sprite.style.backgroundImage) || '.' : '.';
+
+      if ((index + 1) % 20 === 0) {
+        levelText += '\n';
+      }
+    });
+
+    const blob = new Blob([levelText], { type: 'text/plain' });
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = 'level.txt';
+    downloadLink.click();
+  }
+
+  function placeAir() {
+    document.querySelectorAll('.grid-item').forEach(item => item.innerHTML = '');
+  }
+
+  function resetButtonStyles() {
+    document.querySelectorAll('.toolbar button').forEach(button => button.classList.remove('selected'));
+  }
+
+  function getSpriteUrl(spriteType) {
+    const spriteUrls = {
+      block: 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/block.png',
+      spike: 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/spike.png',
+      ball_portal: 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/ball_p.png',
+      wave_portal: 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/wave_p.png',
+      cube_portal: 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube_p.png',
+      ufo_portal: 'https://github.com/Carogaphity/GDBot/blob/pycord-port/assets/ufo_p.png?raw=true',
+      finish: 'https://via.placeholder.com/30x30?text=Finish',
+      player: 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube2.png',
+      air: 'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/air.png'
+    };
+    return spriteUrls[spriteType] || '';
+  }
+
+  function getSpriteKey(backgroundImage) {
+    const spriteMap = {
+      'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/block.png': '-',
+      'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/spike.png': '^',
+      'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/ball_p.png': 'B',
+      'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/wave_p.png': 'W',
+      'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube_p.png': 'C',
+      'https://github.com/Carogaphity/GDBot/blob/pycord-port/assets/ufo_p.png?raw=true': 'U',
+      'https://via.placeholder.com/30x30?text=Finish': '*',
+      'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/cube2.png': '%',
+      'https://raw.githubusercontent.com/Carogaphity/GDBot/refs/heads/pycord-port/assets/air.png': '.'
+    };
+    return spriteMap[backgroundImage.replace(/^url\(['"](.+)['"]\)$/, '$1')] || '.';
+  }
+</script>
+
+</body>
+</html>
