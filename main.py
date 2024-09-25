@@ -352,5 +352,5 @@ async def load_level(
     )):
     await create_level(level, ctx)
 
-with open('TOKEN.txt', 'r') as d:
-    bot.run(d.read())
+# with open('bot.txt', 'r') as d:
+    # bot.run(d.read())
