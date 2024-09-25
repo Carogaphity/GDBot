@@ -88,6 +88,8 @@ async def create_level(level: discord.Attachment, ctx: discord.ApplicationContex
         await ctx.respond(f"Failed to load map.\n`{e}`", ephemeral=True)
         return
     await loadingmsg.edit("Read grid successfully!")
+    await asyncio.sleep(0.3)
+    await loadingmsg.delete()
     
 
 
@@ -136,16 +138,15 @@ async def on_reaction_add(reaction, user):
 async def play(
     ctx: discord.ApplicationContext,
     level: discord.Option(
-        discord.Attachment, name="level", description="a text file containing a gdbot level. If not included, will use the most recent level you've loaded."
+        discord.Attachment, required=False, name="level", description="a text file containing a gdbot level. If not included, will use the most recent level you've loaded."
     ),
-    private: discord.Option(bool, name="private", description="whether the game should be seen by only you")
 ):
     
     global game_states
     if not ctx.author.id in game_states:
         game_states[ctx.author.id] = gameState()
     try:
-        board, player_pos = await create_level(level if level else game_states[ctx.author.id].level)
+        board, player_pos = await create_level(level if level else game_states[ctx.author.id].level, ctx)
 
         if not board or not player_pos:
             return
@@ -164,9 +165,9 @@ async def play(
     embed = discord.Embed(
         title="Geometry Dash", description=new_frame, color=discord.Color.green()
     )
-    embed.add_field(name=f"Started by {ctx.author.mention}", value="", inline=True)
+    embed.add_field(name=f"Started by {ctx.author}", value="", inline=True)
 
-    bot_message = await ctx.respond(embed=embed, ephemeral=private)
+    bot_message = await ctx.send(embed=embed)
     await bot_message.add_reaction("\U0001F53C")
 
     play = True
@@ -349,7 +350,7 @@ async def load_level(
         name="level", description="the level to import",
         required=True
     )):
-    await create_level(level)
+    await create_level(level, ctx)
 
 with open('TOKEN.txt', 'r') as d:
     bot.run(d.read())
